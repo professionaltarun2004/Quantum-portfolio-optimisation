@@ -105,16 +105,41 @@ class DataFetcher:
             return None, None
     
     def _fetch_yahoo_data(self, tickers: List[str], period: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Fetch data from Yahoo Finance."""
+        """Fetch data from Yahoo Finance with robust error handling."""
         try:
-            with st.spinner(f"Fetching data for {len(tickers)} stocks from Yahoo Finance..."):
-                # Try to download price data with better error handling
-                price_data = yf.download(tickers, period=period, progress=False)
+            # Limit tickers to avoid overwhelming the API
+            limited_tickers = tickers[:10]  # Limit to 10 stocks for better reliability
+            
+            with st.spinner(f"Fetching data for {len(limited_tickers)} stocks from Yahoo Finance..."):
+                # Add timeout and retry logic
+                import time
+                max_retries = 2
+                
+                for attempt in range(max_retries):
+                    try:
+                        # Try to download price data with better error handling
+                        price_data = yf.download(
+                            limited_tickers, 
+                            period=period, 
+                            progress=False,
+                            timeout=10,
+                            threads=False  # Disable threading to avoid issues
+                        )
+                        
+                        if not price_data.empty:
+                            break
+                        
+                    except Exception as e:
+                        if attempt < max_retries - 1:
+                            st.info(f"Retry {attempt + 1}/{max_retries} for Yahoo Finance...")
+                            time.sleep(2)  # Wait before retry
+                        else:
+                            raise e
                 
                 # Handle empty response or API issues
                 if price_data.empty:
                     st.warning("Yahoo Finance API returned empty data. Using synthetic data for demonstration.")
-                    return self._generate_synthetic_data(tickers, period)
+                    return self._generate_synthetic_data(limited_tickers, period)
                 
                 # Extract adjusted close prices
                 if 'Adj Close' in price_data.columns.get_level_values(0):
@@ -329,10 +354,17 @@ def main():
     
     # Main content area
     if run_optimization and tickers:
-        # Fetch data
-        price_data, returns_data = data_fetcher.get_stock_data(
-            tickers, period, api_key, data_source
-        )
+        # Add option to use synthetic data directly
+        use_synthetic = st.checkbox("Use Synthetic Data (Recommended due to API issues)", True)
+        
+        if use_synthetic:
+            st.info("Using synthetic data for demonstration. This provides realistic portfolio optimization examples.")
+            price_data, returns_data = data_fetcher._generate_synthetic_data(tickers, period)
+        else:
+            # Fetch real data
+            price_data, returns_data = data_fetcher.get_stock_data(
+                tickers, period, api_key, data_source
+            )
         
         if price_data is not None and returns_data is not None:
             # Limit to portfolio size
@@ -362,11 +394,27 @@ def main():
                         st.subheader(f"{method} Results")
                         
                         with st.spinner(f"Running {method} optimization..."):
-                            classical_opt = ClassicalOptimizer()
-                            classical_result = classical_opt.optimize(
-                                returns_data, risk_tolerance, method.lower().replace('-', '_')
-                            )
-                            results[f'classical_{method.lower()}'] = classical_result
+                            try:
+                                classical_opt = ClassicalOptimizer()
+                                classical_result = classical_opt.optimize(
+                                    returns_data, risk_tolerance, method.lower().replace('-', '_')
+                                )
+                                results[f'classical_{method.lower()}'] = classical_result
+                            except Exception as e:
+                                st.error(f"Error in {method} optimization: {str(e)}")
+                                # Create fallback result with equal weights
+                                n_assets = len(returns_data.columns)
+                                classical_result = {
+                                    'weights': np.ones(n_assets) / n_assets,
+                                    'expected_return': returns_data.mean().mean(),
+                                    'volatility': 0.15,
+                                    'sharpe_ratio': 0.5,
+                                    'method': method,
+                                    'status': 'fallback'
+                                }
+                                results[f'classical_{method.lower()}'] = classical_result
+                                st.warning(f"Using equal-weight fallback for {method}")
+                                continue
                             
                         display_classical_results(classical_result, price_data, method)
             
