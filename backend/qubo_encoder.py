@@ -32,12 +32,12 @@ class QUBOEncoder:
         
         # Diagonal terms: -expected_return (we want to maximize returns)
         for i in range(n_assets):
-            Q[i, i] = -expected_returns[i] / risk_tolerance
+            Q[i, i] = -expected_returns[i] / max(risk_tolerance, 1e-8)
         
         # Off-diagonal terms: covariance (we want to minimize risk)
         for i in range(n_assets):
             for j in range(i+1, n_assets):
-                Q[i, j] = cov_matrix[i, j] / (2 * risk_tolerance)
+                Q[i, j] = cov_matrix[i, j] / (2 * max(risk_tolerance, 1e-8))
                 Q[j, i] = Q[i, j]  # Symmetric
         
         # Add penalty for having too few or too many assets
@@ -90,7 +90,7 @@ class QUBOEncoder:
                         if asset_i == asset_j:
                             # Return term (diagonal)
                             if bit_i == bit_j:
-                                Q[var_i, var_j] += -expected_returns[asset_i] * weight_i_coeff / risk_tolerance
+                                Q[var_i, var_j] += -expected_returns[asset_i] * weight_i_coeff / max(risk_tolerance, 1e-8)
                             
                             # Risk term (diagonal of covariance)
                             Q[var_i, var_j] += cov_matrix[asset_i, asset_j] * weight_i_coeff * weight_j_coeff / risk_tolerance

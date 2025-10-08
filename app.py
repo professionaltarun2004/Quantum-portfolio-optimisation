@@ -18,38 +18,7 @@ from backend.qubo_encoder import QUBOEncoder
 from backend.comparator import Comparator
 from backend.explanation_layer import ExplanationLayer
 
-# Page config
-st.set_page_config(
-    page_title="Quantum vs AI/ML Portfolio Optimization",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Custom CSS
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
-    }
-    .comparison-winner {
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 0.25rem;
-        padding: 0.5rem;
-        margin: 0.25rem 0;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Page config and CSS will be set in main() function
 
 class DataFetcher:
     """Enhanced data fetcher supporting multiple data sources."""
@@ -262,6 +231,43 @@ class DataFetcher:
         return self._fetch_yahoo_data(tickers[:50], "2y")  # Fallback to Yahoo for demo
 
 def main():
+    # Page config (with error handling for deployment)
+    try:
+        st.set_page_config(
+            page_title="Quantum vs AI/ML Portfolio Optimization",
+            page_icon="📊",
+            layout="wide",
+            initial_sidebar_state="expanded"
+        )
+    except Exception:
+        # Page config already set, continue
+        pass
+    
+    # Custom CSS
+    st.markdown("""
+    <style>
+        .main-header {
+            font-size: 2.5rem;
+            color: #1f77b4;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background-color: #f0f2f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        .comparison-winner {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
     st.markdown('<h1 class="main-header">🚀 Quantum vs AI/ML Portfolio Optimization</h1>', unsafe_allow_html=True)
     
     # Initialize data fetcher
@@ -1079,5 +1085,13 @@ def display_educational_content(explanations: Dict, results: Dict):
         - **arXiv**: Latest quantum computing research papers
         """)
 
+def run_app():
+    """Wrapper function for deployment compatibility."""
+    try:
+        main()
+    except Exception as e:
+        st.error(f"Application error: {str(e)}")
+        st.info("Please refresh the page or contact support if the issue persists.")
+
 if __name__ == "__main__":
-    main()
+    run_app()

@@ -48,7 +48,7 @@ class QuantumOptimizer:
         # Calculate portfolio metrics (simplified)
         portfolio_return = np.random.uniform(0.08, 0.15)  # Placeholder
         portfolio_risk = np.random.uniform(0.12, 0.25)    # Placeholder
-        sharpe_ratio = portfolio_return / portfolio_risk if portfolio_risk > 0 else 0
+        sharpe_ratio = portfolio_return / portfolio_risk if portfolio_risk > 1e-8 else 0
         
         return {
             'weights': weights,
@@ -115,8 +115,10 @@ class QuantumOptimizer:
                 return objective_value
         
         # Run optimization
-        result = minimize(cost_function, initial_params, method='COBYLA', 
-                         options={'maxiter': 50})
+        # Use SLSQP instead of COBYLA for better compatibility
+        bounds = [(0, 2*np.pi) for _ in range(len(initial_params))]
+        result = minimize(cost_function, initial_params, method='SLSQP', 
+                         bounds=bounds, options={'maxiter': 50})
         
         # Generate final solution
         final_probabilities = np.abs(np.sin(result.x[:n_assets])) ** 2
@@ -180,8 +182,10 @@ class QuantumOptimizer:
                 return objective_value
         
         # Run optimization
-        result = minimize(cost_function, initial_params, method='COBYLA',
-                         options={'maxiter': 50})
+        # Use SLSQP instead of COBYLA for better compatibility
+        bounds = [(0, 2*np.pi) for _ in range(len(initial_params))]
+        result = minimize(cost_function, initial_params, method='SLSQP',
+                         bounds=bounds, options={'maxiter': 50})
         
         # Generate final solution using optimal parameters
         final_probabilities = np.ones(n_assets) / n_assets

@@ -79,7 +79,7 @@ class ClassicalOptimizer:
         # Calculate portfolio metrics
         portfolio_return = np.dot(weights, expected_returns) * 252  # Annualized
         portfolio_risk = np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights))) * np.sqrt(252)
-        sharpe_ratio = portfolio_return / portfolio_risk if portfolio_risk > 0 else 0
+        sharpe_ratio = portfolio_return / portfolio_risk if portfolio_risk > 1e-8 else 0
         
         computation_time = time.time() - start_time
         
