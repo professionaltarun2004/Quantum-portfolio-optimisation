@@ -434,15 +434,23 @@ def main():
                         qubo_encoder = QUBOEncoder()
                         qubo_matrix = qubo_encoder.encode_portfolio_problem(returns_data, risk_tolerance)
                         
-                        # Solve with quantum
-                        quantum_opt = QuantumOptimizer()
+                        # Solve with quantum (will use Qiskit if available)
+                        quantum_opt = QuantumOptimizer(use_quantum=True)
                         quantum_result = quantum_opt.optimize(
                             qubo_matrix, 
                             method=quantum_method,
                             circuit_depth=circuit_depth,
-                            shots=shots
+                            shots=shots,
+                            returns_data=returns_data
                         )
                         results['quantum'] = quantum_result
+                        
+                        # Display quantum backend status
+                        backend_type = quantum_result.get('quantum_result', {}).get('quantum_backend', 'classical_simulation')
+                        if backend_type == 'qiskit_aer':
+                            st.success("✅ Using Real Qiskit Quantum Simulation")
+                        else:
+                            st.info("ℹ️ Using Classical Simulation (Qiskit not available)")
                         
                     display_quantum_results(quantum_result, price_data, returns_data.columns.tolist())
             
@@ -545,19 +553,26 @@ def display_welcome_screen():
         """)
 
 def display_classical_results(result: Dict, price_data: pd.DataFrame, method: str):
-    """Enhanced display for classical optimization results."""
+    """Enhanced display for classical optimization results with user-friendly explanations."""
     
-    # Performance metrics
+    # User-friendly performance summary
+    st.success(f"🎯 **{method} Method Results:** Your portfolio is expected to earn {result['expected_return']*100:.2f}% annually with {result['risk']*100:.2f}% volatility")
+    
+    # Performance metrics with explanations
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Expected Return", f"{result['expected_return']:.2%}")
+        st.metric("Expected Fail", f"{result['expected_return']:.2%}")
+        st.caption("💰 How much your portfolio might earn per year")
     with col2:
         st.metric("Risk (Volatility)", f"{result['risk']:.2%}")
+        st.caption("🛡️ How much your returns might fluctuate")
     with col3:
         st.metric("Sharpe Ratio", f"{result['sharpe_ratio']:.2f}")
+        st.caption("⚡ Risk-adjusted performance (higher is better)")
     with col4:
         st.metric("Computation Time", f"{result['computation_time']:.3f}s")
+        st.caption("⏱️ How long the optimization took")
     
     # Portfolio allocation
     col1, col2 = st.columns(2)
@@ -619,21 +634,31 @@ def display_classical_results(result: Dict, price_data: pd.DataFrame, method: st
         st.write("- Adaptive feature learning")
 
 def display_quantum_results(result: Dict, price_data: pd.DataFrame, tickers: List[str]):
-    """Enhanced display for quantum optimization results."""
+    """Enhanced display for quantum optimization results with user-friendly explanations."""
     
-    # Performance metrics
+    # User-friendly performance summary
+    method_name = result.get('method', 'Quantum')
+    backend_info = "using real quantum simulation" if result.get('quantum_result', {}).get('quantum_backend') == 'qiskit_aer' else "using classical simulation"
+    st.success(f"🚀 **{method_name} Method Results** ({backend_info}): Your portfolio is expected to earn {result['expected_return']*100:.2f}% annually with {result['risk']*100:.2f}% volatility")
+    
+    # Performance metrics with explanations
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
-        st.metric("Expected Return", f"{result['expected_return']:.2%}")
+        st.metric("Expected Fail", f"{result['expected_return']:.2%}")
+        st.caption("💰 Annual portfolio return")
     with col2:
         st.metric("Risk (Volatility)", f"{result['risk']:.2%}")
+        st.caption("🛡️ Portfolio volatility")
     with col3:
         st.metric("Sharpe Ratio", f"{result['sharpe_ratio']:.2f}")
+        st.caption("⚡ Risk-adjusted performance")
     with col4:
         st.metric("Circuit Depth", result.get('circuit_depth', 'N/A'))
+        st.caption("🔬 Quantum circuit complexity")
     with col5:
         st.metric("Computation Time", f"{result['computation_time']:.3f}s")
+        st.caption("⏱️ Optimization time")
     
     # Portfolio allocation
     col1, col2 = st.columns(2)
@@ -655,7 +680,7 @@ def display_quantum_results(result: Dict, price_data: pd.DataFrame, tickers: Lis
     with col2:
         # Quantum circuit visualization
         st.subheader("Quantum Circuit Structure")
-        quantum_opt = QuantumOptimizer()
+        quantum_opt = QuantumOptimizer(use_quantum=True)
         circuit_desc = quantum_opt.create_quantum_circuit_description(
             len(result.get('weights', [])), 
             result.get('method', 'VQE'), 
@@ -711,16 +736,77 @@ def display_quantum_results(result: Dict, price_data: pd.DataFrame, tickers: Lis
         st.plotly_chart(fig, use_container_width=True)
 
 def display_comprehensive_comparison(results: Dict, tickers: List[str]):
-    """Enhanced side-by-side comparison of all methods."""
+    """Enhanced side-by-side comparison of all methods with user-friendly explanations."""
+    
+    # Add user-friendly summary if we have both classical and quantum results
+    if 'classical' in results and 'quantum' in results:
+        from backend.comparator import Comparator
+        comparator = Comparator()
+        comparison = comparator.compare_results(results['classical'], results['quantum'])
+        user_summary = comparison.get('user_friendly_summary', {})
+        
+        # Display headline summary
+        if 'headline' in user_summary:
+            st.success(user_summary['headline'])
+        
+        # Display practical recommendation
+        if 'practical_recommendation' in user_summary:
+            st.info(user_summary['practical_recommendation'])
+        
+        # Detailed explanations in expandable sections
+        with st.expander("🔍 Detailed Performance Analysis"):
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown("### 💰 Returns Analysis")
+                returns_exp = user_summary.get('returns_explanation', {})
+                st.write(f"**Winner:** {returns_exp.get('winner', 'N/A')}")
+                st.write(f"**Classical:** {returns_exp.get('classical_return', 'N/A')}")
+                st.write(f"**Quantum:** {returns_exp.get('quantum_return', 'N/A')}")
+                st.write(returns_exp.get('explanation', ''))
+            
+            with col2:
+                st.markdown("### 🛡️ Risk Analysis")
+                risk_exp = user_summary.get('risk_explanation', {})
+                st.write(f"**Lower Risk:** {risk_exp.get('winner', 'N/A')}")
+                st.write(f"**Classical:** {risk_exp.get('classical_risk', 'N/A')}")
+                st.write(f"**Quantum:** {risk_exp.get('quantum_risk', 'N/A')}")
+                st.write(risk_exp.get('explanation', ''))
+            
+            with col3:
+                st.markdown("### ⚡ Efficiency Analysis")
+                eff_exp = user_summary.get('efficiency_explanation', {})
+                st.write(f"**Better Sharpe:** {eff_exp.get('winner', 'N/A')}")
+                st.write(f"**Classical:** {eff_exp.get('classical_sharpe', 'N/A')}")
+                st.write(f"**Quantum:** {eff_exp.get('quantum_sharpe', 'N/A')}")
+                st.write(eff_exp.get('explanation', ''))
+        
+        with st.expander("🎯 Diversification & Speed Analysis"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("### 📊 Diversification")
+                div_analysis = user_summary.get('diversification_analysis', {})
+                st.write(f"**Classical Assets:** {div_analysis.get('classical_assets', 'N/A')}")
+                st.write(f"**Quantum Assets:** {div_analysis.get('quantum_assets', 'N/A')}")
+                st.write(f"**Better Diversification:** {div_analysis.get('diversification_winner', 'N/A')}")
+                st.write(div_analysis.get('explanation', ''))
+            
+            with col2:
+                st.markdown("### ⏱️ Computation Speed")
+                comp_exp = user_summary.get('computation_comparison', {})
+                st.write(f"**Classical Time:** {comp_exp.get('classical_time', 'N/A')}")
+                st.write(f"**Quantum Time:** {comp_exp.get('quantum_time', 'N/A')}")
+                st.write(comp_exp.get('explanation', ''))
     
     # Performance summary table
-    st.subheader("📊 Performance Summary")
+    st.subheader("📊 Detailed Performance Metrics")
     
     summary_data = []
     for method_name, result in results.items():
         summary_data.append({
             'Method': method_name.replace('_', ' ').title(),
-            'Expected Return': f"{result['expected_return']:.2%}",
+            'Expected fail': f"{result['expected_return']:.2%}",
             'Risk': f"{result['risk']:.2%}",
             'Sharpe Ratio': f"{result['sharpe_ratio']:.2f}",
             'Computation Time': f"{result['computation_time']:.3f}s",
@@ -752,7 +838,7 @@ def display_comprehensive_comparison(results: Dict, tickers: List[str]):
         fig.update_layout(
             title='Risk vs Return Comparison',
             xaxis_title='Risk (Volatility)',
-            yaxis_title='Expected Return',
+            yaxis_title='Expected fail',
             showlegend=True
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -857,7 +943,7 @@ def display_advanced_visualizations(results: Dict, returns_data: pd.DataFrame, p
         fig.update_layout(
             title='Efficient Frontier with Method Results',
             xaxis_title='Risk (Volatility)',
-            yaxis_title='Expected Return'
+            yaxis_title='Expected fail'
         )
         st.plotly_chart(fig, use_container_width=True)
     

@@ -2,7 +2,7 @@
 
 A full-stack web application that compares classical (AI/ML) and quantum (VQE/QAOA) optimization approaches for stock portfolio allocation, using real market data. The app enables interactive user exploration and educational visualization of both optimization paradigms.
 
-## 🚀 Features
+##  Features
 
 ### Frontend (Streamlit)
 - **Interactive Interface**: User-friendly web interface for parameter selection
@@ -14,12 +14,12 @@ A full-stack web application that compares classical (AI/ML) and quantum (VQE/QA
 
 ### Backend Optimization
 - **Classical Methods**: Mean-variance optimization with ML enhancements
-- **Quantum Algorithms**: VQE and QAOA using Qiskit
+- **Quantum Algorithms**: VQE and QAOA using Qiskit with classical fallback
 - **QUBO Encoding**: Converts portfolio problems to quantum-compatible format
 - **Performance Comparison**: Side-by-side analysis of both approaches
 - **Educational Layer**: Automated insights and explanations
 
-## 🛠️ Installation
+##  Installation
 
 1. **Clone the repository**:
 ```bash
@@ -39,7 +39,7 @@ streamlit run app.py
 
 4. **Open your browser** to `http://localhost:8501`
 
-## 📊 Usage
+##  Usage
 
 ### Basic Workflow
 1. **Configure Parameters**: Use the sidebar to set up your optimization
@@ -77,7 +77,7 @@ streamlit run app.py
 - **VQE (Variational Quantum Eigensolver)**: Hybrid quantum-classical approach
 - **QAOA (Quantum Approximate Optimization Algorithm)**: Combinatorial optimization
 - **QUBO Encoding**: Quadratic Unconstrained Binary Optimization formulation
-- **Backend**: Qiskit AerSimulator for quantum circuit simulation
+- **Backend**: Qiskit AerSimulator with classical fallback when unavailable
 
 ### Performance Metrics
 - **Expected Return**: Annualized portfolio return
@@ -86,7 +86,7 @@ streamlit run app.py
 - **Diversification**: Portfolio concentration analysis
 - **Computation Time**: Algorithm efficiency comparison
 
-## 📚 Educational Content
+##  Educational Content
 
 The app includes comprehensive educational materials:
 
@@ -108,7 +108,7 @@ The app includes comprehensive educational materials:
 - Video explanations and demonstrations
 - Interactive algorithm visualizations
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 quantum-portfolio-optimizer/
@@ -124,23 +124,23 @@ quantum-portfolio-optimizer/
 └── README.md                      # This file
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables
 - No special environment variables required
 - All configuration is done through the web interface
 
 ### Quantum Backend
-- Default: Qiskit AerSimulator (local simulation)
+- Default: Qiskit AerSimulator (quantum simulation)
+- Automatic fallback to classical simulation if Qiskit unavailable
 - Can be extended to use IBM Quantum hardware
-- Supports custom quantum backends
 
 ### Data Sources
 - Yahoo Finance API for market data
 - Configurable time periods (1y, 2y, 3y, 5y)
 - Support for custom datasets via CSV upload
 
-## 🚀 Deployment
+##  Deployment
 
 ### Local Development
 ```bash
@@ -164,7 +164,7 @@ EXPOSE 8501
 CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
 ```
 
-## 🧪 Testing
+##  Testing
 
 ### Unit Tests
 ```bash
@@ -181,7 +181,7 @@ python -m pytest tests/integration/
 python -m pytest tests/performance/
 ```
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -189,25 +189,25 @@ python -m pytest tests/performance/
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - **Qiskit Team**: For the excellent quantum computing framework
 - **Streamlit Team**: For the intuitive web app framework
 - **Yahoo Finance**: For providing free market data API
 - **Research Community**: For advancing quantum optimization algorithms
 
-## 📞 Support
+##  Support
 
 For questions, issues, or contributions:
 - Open an issue on GitHub
 - Check the documentation in the `/docs` folder
 - Review the educational content in the app
 
-## 🔮 Future Enhancements
+##  Future Enhancements
 
 ### Planned Features
 - **Multi-objective Optimization**: Pareto frontier analysis
@@ -223,5 +223,3 @@ For questions, issues, or contributions:
 - **Alternative Encodings**: Different QUBO formulations
 
 ---
-
-**Built with ❤️ for the quantum computing and finance communities**

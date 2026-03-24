@@ -11,7 +11,7 @@ class QUBOEncoder:
     
     def encode_portfolio_problem(self, returns_data: pd.DataFrame, risk_tolerance: float = 1.0) -> np.ndarray:
         """
-        Encode portfolio optimization as QUBO matrix.
+        Encode portfolio optimization as QUBO matrix with enhanced formulation.
         
         Args:
             returns_data: Historical returns data
@@ -21,41 +21,79 @@ class QUBOEncoder:
             QUBO matrix Q where objective is x^T Q x
         """
         n_assets = len(returns_data.columns)
+        
+        # Calculate enhanced statistics
         expected_returns = returns_data.mean().values
         cov_matrix = returns_data.cov().values
         
-        # For simplicity, use binary variables for asset selection
-        # Each asset can be either included (1) or not (0)
-        # We'll add penalty terms to enforce portfolio constraints
+        # Normalize returns to prevent numerical issues
+        return_scale = np.std(expected_returns) if np.std(expected_returns) > 1e-8 else 1.0
+        expected_returns = expected_returns / return_scale
+        
+        # Scale covariance matrix
+        risk_scale = np.mean(np.diag(cov_matrix)) if np.mean(np.diag(cov_matrix)) > 1e-8 else 1.0
+        cov_matrix = cov_matrix / risk_scale
         
         Q = np.zeros((n_assets, n_assets))
         
-        # Diagonal terms: -expected_return (we want to maximize returns)
-        for i in range(n_assets):
-            Q[i, i] = -expected_returns[i] / max(risk_tolerance, 1e-8)
+        # Enhanced objective formulation
+        risk_aversion = 1.0 / max(risk_tolerance, 0.1)
         
-        # Off-diagonal terms: covariance (we want to minimize risk)
+        # Diagonal terms: combine return maximization and individual risk
+        for i in range(n_assets):
+            # Return component (negative because we maximize)
+            return_component = -expected_returns[i] * 2.0
+            
+            # Individual risk component (positive because we minimize)
+            risk_component = cov_matrix[i, i] * risk_aversion
+            
+            Q[i, i] = return_component + risk_component
+        
+        # Off-diagonal terms: pairwise risk interactions
         for i in range(n_assets):
             for j in range(i+1, n_assets):
-                Q[i, j] = cov_matrix[i, j] / (2 * max(risk_tolerance, 1e-8))
+                # Covariance penalty (diversification benefit)
+                covar_penalty = cov_matrix[i, j] * risk_aversion * 0.5
+                
+                # Add correlation-based interaction
+                corr_ij = cov_matrix[i, j] / (np.sqrt(cov_matrix[i, i] * cov_matrix[j, j]) + 1e-8)
+                interaction_bonus = -abs(corr_ij) * 0.1  # Reward diversification
+                
+                Q[i, j] = covar_penalty + interaction_bonus
                 Q[j, i] = Q[i, j]  # Symmetric
         
-        # Add penalty for having too few or too many assets
-        target_assets = min(5, n_assets)
-        penalty = self.penalty_weight
+        # Enhanced constraint handling
+        target_assets = max(3, min(7, n_assets // 2))  # Dynamic target based on problem size
+        constraint_penalty = self.penalty_weight * 2.0
         
+        # Soft constraint: encourage optimal number of assets
         # Penalty term: (sum(x_i) - target_assets)^2
-        # Expanded: sum(x_i^2) + target_assets^2 - 2*target_assets*sum(x_i) + 2*sum_i<j(x_i*x_j)
-        
-        # x_i^2 = x_i for binary variables, so add to diagonal
         for i in range(n_assets):
-            Q[i, i] += penalty * (1 - 2 * target_assets)
+            Q[i, i] += constraint_penalty * (1 - 2 * target_assets / n_assets)
         
-        # Cross terms: 2*x_i*x_j
+        # Cross terms for constraint
+        constraint_cross = constraint_penalty * 2.0 / (n_assets * n_assets)
         for i in range(n_assets):
             for j in range(i+1, n_assets):
-                Q[i, j] += penalty
+                Q[i, j] += constraint_cross
                 Q[j, i] = Q[i, j]
+        
+        # Add sector diversification bonus (simulate sector effects)
+        sector_bonus = 0.05
+        for i in range(n_assets):
+            for j in range(i+1, n_assets):
+                # Simulate sector diversity (assets far apart in index are different sectors)
+                sector_distance = abs(i - j) / n_assets
+                if sector_distance > 0.3:  # Different "sectors"
+                    Q[i, j] -= sector_bonus  # Bonus for cross-sector diversification
+                    Q[j, i] = Q[i, j]
+        
+        # Ensure numerical stability
+        Q = np.nan_to_num(Q, nan=0.0, posinf=1.0, neginf=-1.0)
+        
+        # Scale the entire matrix for better optimization
+        matrix_scale = np.max(np.abs(Q)) if np.max(np.abs(Q)) > 1e-8 else 1.0
+        Q = Q / matrix_scale * 10.0  # Scale to reasonable range
         
         return Q
     

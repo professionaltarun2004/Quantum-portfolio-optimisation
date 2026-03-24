@@ -10,8 +10,8 @@ import os
 def check_dependencies():
     """Check if required packages are installed."""
     required_packages = [
-        'streamlit', 'qiskit', 'cvxpy', 'numpy', 'pandas', 
-        'plotly', 'yfinance', 'sklearn'
+        'streamlit', 'numpy', 'pandas', 
+        'plotly', 'yfinance', 'sklearn', 'scipy'
     ]
     
     missing_packages = []

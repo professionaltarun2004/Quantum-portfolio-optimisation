@@ -13,7 +13,7 @@ class Comparator:
     
     def compare_results(self, classical_result: Dict, quantum_result: Dict) -> Dict:
         """
-        Compare classical and quantum optimization results.
+        Compare classical and quantum optimization results with user-friendly explanations.
         
         Args:
             classical_result: Results from classical optimizer
@@ -27,7 +27,8 @@ class Comparator:
             'allocation_comparison': self._compare_allocations(classical_result, quantum_result),
             'convergence_comparison': self._compare_convergence(classical_result, quantum_result),
             'computational_efficiency': self._compare_efficiency(classical_result, quantum_result),
-            'visualizations': self._create_comparison_plots(classical_result, quantum_result)
+            'visualizations': self._create_comparison_plots(classical_result, quantum_result),
+            'user_friendly_summary': self._create_user_friendly_summary(classical_result, quantum_result)
         }
         
         return comparison
@@ -330,4 +331,184 @@ class Comparator:
             showlegend=True
         )
         
-        return fig
+        return fig 
+   
+    def _create_user_friendly_summary(self, classical: Dict, quantum: Dict) -> Dict:
+        """Create user-friendly explanations of the comparison results."""
+        
+        # Calculate key metrics
+        classical_return = classical.get('expected_return', 0) * 100  # Convert to percentage
+        quantum_return = quantum.get('expected_return', 0) * 100
+        classical_risk = classical.get('risk', 0) * 100
+        quantum_risk = quantum.get('risk', 0) * 100
+        classical_sharpe = classical.get('sharpe_ratio', 0)
+        quantum_sharpe = quantum.get('sharpe_ratio', 0)
+        
+        # Determine which method performed better
+        return_winner = "Quantum" if quantum_return > classical_return else "Classical"
+        risk_winner = "Quantum" if quantum_risk < classical_risk else "Classical"  # Lower risk is better
+        sharpe_winner = "Quantum" if quantum_sharpe > classical_sharpe else "Classical"
+        
+        # Create easy-to-understand explanations
+        summary = {
+            'headline': self._get_headline_summary(classical, quantum),
+            'returns_explanation': {
+                'winner': return_winner,
+                'classical_return': f"{classical_return:.2f}%",
+                'quantum_return': f"{quantum_return:.2f}%",
+                'difference': f"{abs(quantum_return - classical_return):.2f}%",
+                'explanation': self._explain_returns_difference(classical_return, quantum_return)
+            },
+            'risk_explanation': {
+                'winner': risk_winner,
+                'classical_risk': f"{classical_risk:.2f}%",
+                'quantum_risk': f"{quantum_risk:.2f}%",
+                'difference': f"{abs(quantum_risk - classical_risk):.2f}%",
+                'explanation': self._explain_risk_difference(classical_risk, quantum_risk)
+            },
+            'efficiency_explanation': {
+                'classical_sharpe': f"{classical_sharpe:.3f}",
+                'quantum_sharpe': f"{quantum_sharpe:.3f}",
+                'winner': sharpe_winner,
+                'explanation': self._explain_sharpe_ratio(classical_sharpe, quantum_sharpe)
+            },
+            'diversification_analysis': self._analyze_diversification(classical, quantum),
+            'practical_recommendation': self._get_practical_recommendation(classical, quantum),
+            'computation_comparison': self._explain_computation_time(classical, quantum)
+        }
+        
+        return summary
+    
+    def _get_headline_summary(self, classical: Dict, quantum: Dict) -> str:
+        """Generate a headline summary of the comparison."""
+        classical_sharpe = classical.get('sharpe_ratio', 0)
+        quantum_sharpe = quantum.get('sharpe_ratio', 0)
+        
+        if abs(quantum_sharpe - classical_sharpe) < 0.05:
+            return "📊 Both methods show similar performance - choose based on your preference!"
+        elif quantum_sharpe > classical_sharpe:
+            improvement = ((quantum_sharpe - classical_sharpe) / classical_sharpe * 100) if classical_sharpe > 0 else 0
+            return f"🚀 Quantum method outperformed classical by {improvement:.1f}% in risk-adjusted returns!"
+        else:
+            improvement = ((classical_sharpe - quantum_sharpe) / quantum_sharpe * 100) if quantum_sharpe > 0 else 0
+            return f"📈 Classical method outperformed quantum by {improvement:.1f}% in risk-adjusted returns!"
+    
+    def _explain_returns_difference(self, classical_return: float, quantum_return: float) -> str:
+        """Explain the difference in expected returns."""
+        diff = quantum_return - classical_return
+        
+        if abs(diff) < 0.5:
+            return "Both methods predict very similar returns for your portfolio."
+        elif diff > 0:
+            return f"The quantum method suggests your portfolio could earn {diff:.2f}% more annually. This could mean an extra ${diff*10:.0f} per $1,000 invested each year."
+        else:
+            return f"The classical method suggests {abs(diff):.2f}% higher returns. This could mean an extra ${abs(diff)*10:.0f} per $1,000 invested each year."
+    
+    def _explain_risk_difference(self, classical_risk: float, quantum_risk: float) -> str:
+        """Explain the difference in portfolio risk."""
+        diff = quantum_risk - classical_risk
+        
+        if abs(diff) < 1:
+            return "Both methods result in similar risk levels for your portfolio."
+        elif diff < 0:
+            return f"The quantum method reduces portfolio risk by {abs(diff):.2f}%. This means less volatility and more stable returns."
+        else:
+            return f"The quantum method has {diff:.2f}% higher risk. This means more volatility but potentially higher rewards."
+    
+    def _explain_sharpe_ratio(self, classical_sharpe: float, quantum_sharpe: float) -> str:
+        """Explain Sharpe ratio in simple terms."""
+        if classical_sharpe > quantum_sharpe:
+            winner = "classical"
+            better_ratio = classical_sharpe
+        else:
+            winner = "quantum"
+            better_ratio = quantum_sharpe
+        
+        if better_ratio > 1.5:
+            performance = "excellent"
+        elif better_ratio > 1.0:
+            performance = "good"
+        elif better_ratio > 0.5:
+            performance = "moderate"
+        else:
+            performance = "poor"
+        
+        return f"The {winner} method has {performance} risk-adjusted performance. Sharpe ratio measures how much extra return you get for the extra risk you take - higher is better."
+    
+    def _analyze_diversification(self, classical: Dict, quantum: Dict) -> Dict:
+        """Analyze diversification differences."""
+        classical_weights = classical.get('weights', [])
+        quantum_weights = quantum.get('weights', [])
+        
+        # Count assets with meaningful allocation (>1%)
+        classical_assets = np.sum(np.array(classical_weights) > 0.01)
+        quantum_assets = np.sum(np.array(quantum_weights) > 0.01)
+        
+        # Calculate concentration (how spread out the investments are)
+        classical_concentration = np.sum(np.array(classical_weights) ** 2) if len(classical_weights) > 0 else 1
+        quantum_concentration = np.sum(np.array(quantum_weights) ** 2) if len(quantum_weights) > 0 else 1
+        
+        analysis = {
+            'classical_assets': int(classical_assets),
+            'quantum_assets': int(quantum_assets),
+            'diversification_winner': 'Quantum' if quantum_assets > classical_assets else 'Classical',
+            'explanation': self._explain_diversification(classical_assets, quantum_assets, classical_concentration, quantum_concentration)
+        }
+        
+        return analysis
+    
+    def _explain_diversification(self, classical_assets: int, quantum_assets: int, 
+                               classical_conc: float, quantum_conc: float) -> str:
+        """Explain diversification in simple terms."""
+        if classical_assets == quantum_assets:
+            if classical_conc < quantum_conc:
+                return f"Both methods invest in {classical_assets} assets, but classical spreads investments more evenly (better diversification)."
+            elif quantum_conc < classical_conc:
+                return f"Both methods invest in {classical_assets} assets, but quantum spreads investments more evenly (better diversification)."
+            else:
+                return f"Both methods invest in {classical_assets} assets with similar diversification."
+        elif quantum_assets > classical_assets:
+            return f"Quantum method invests in {quantum_assets} assets vs {classical_assets} for classical. More assets usually means better diversification and lower risk."
+        else:
+            return f"Classical method invests in {classical_assets} assets vs {quantum_assets} for quantum. More assets usually means better diversification and lower risk."
+    
+    def _get_practical_recommendation(self, classical: Dict, quantum: Dict) -> str:
+        """Provide practical investment recommendation."""
+        classical_sharpe = classical.get('sharpe_ratio', 0)
+        quantum_sharpe = quantum.get('sharpe_ratio', 0)
+        classical_risk = classical.get('risk', 0)
+        quantum_risk = quantum.get('risk', 0)
+        
+        # Decision logic
+        if abs(classical_sharpe - quantum_sharpe) < 0.1:
+            if classical_risk < quantum_risk:
+                return "💡 Recommendation: Go with the Classical method - similar returns but lower risk."
+            else:
+                return "💡 Recommendation: Go with the Quantum method - similar returns but lower risk."
+        elif classical_sharpe > quantum_sharpe:
+            return "💡 Recommendation: Classical method offers better risk-adjusted returns for your portfolio."
+        else:
+            return "💡 Recommendation: Quantum method offers better risk-adjusted returns for your portfolio."
+    
+    def _explain_computation_time(self, classical: Dict, quantum: Dict) -> Dict:
+        """Explain computation time differences."""
+        classical_time = classical.get('computation_time', 0)
+        quantum_time = quantum.get('computation_time', 0)
+        
+        if classical_time > 0 and quantum_time > 0:
+            if classical_time < quantum_time:
+                faster = "Classical"
+                speedup = quantum_time / classical_time
+            else:
+                faster = "Quantum"
+                speedup = classical_time / quantum_time
+            
+            explanation = f"{faster} method was {speedup:.1f}x faster ({classical_time:.2f}s vs {quantum_time:.2f}s)"
+        else:
+            explanation = "Both methods completed quickly"
+        
+        return {
+            'classical_time': f"{classical_time:.2f}s",
+            'quantum_time': f"{quantum_time:.2f}s",
+            'explanation': explanation
+        }

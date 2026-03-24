@@ -8,3 +8,7 @@ scipy>=1.11.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 requests>=2.31.0
+# qiskit>=0.45.0
+# qiskit-aer>=0.13.0
+# Note: Qiskit installation can be complex on some systems
+# The app works with classical simulation fallback
