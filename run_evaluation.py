@@ -1,5 +1,6 @@
 import os
 import sys
+import pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -85,7 +86,7 @@ def run_experiment():
         
         plt.plot(dates, r_aversion, label='Risk Aversion ($q$) parameter', color='red')
         plt.plot(dates, c_scaling, label='Hamming Constraint ($P$) scaling', color='green')
-        plt.plot(dates, d_weight, label='Diversification Matrix $(\lambda_{div})$', color='purple')
+        plt.plot(dates, d_weight, label=r'Diversification Matrix $(\lambda_{div})$', color='purple')
         plt.title("Neural Parameters Output Evolution (QRL Actions)")
         plt.ylabel("Normalized Numerical Bound")
         plt.legend()
@@ -134,6 +135,9 @@ def run_experiment():
         
     print("\nPhase 10 Evaluation successfully completed!")
     print(f"Empirical results mathematically locked into 'results/' directory.")
+    
+    with open("results/simulation_data.pkl", "wb") as f:
+        pickle.dump({"static": res_static, "rl": res_rl, "tickers": price_data.columns.tolist()}, f)
 
 if __name__ == "__main__":
     run_experiment()
