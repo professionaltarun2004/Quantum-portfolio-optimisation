@@ -1,0 +1,18 @@
+==================================================
+QCPS SYSTEM EMPIRICAL EVALUATION VERDICTS
+==================================================
+Evaluation Steps Simulated: 42 discrete out-of-sample forward projections.
+
+--- STATIC HEURISTIC BASELINE (OLD SYSTEM) ---
+Total Cumulative Return:     -69.07%
+Average Annual Volatility:   9.02%
+Realized Sharpe Ratio:       -7.881
+Quantum Ensemble Stability:  0.6758
+Value Lost to Transactions:  1.81%
+
+--- HYBRID QRL ADAPTIVE SYSTEM (NEW UPGRADE) ---
+Total Cumulative Return:     -62.74%
+Average Annual Volatility:   8.99%
+Realized Sharpe Ratio:       -7.199
+Quantum Ensemble Stability:  0.6576
+Value Lost to Transactions:  2.01%
